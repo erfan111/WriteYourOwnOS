@@ -3,7 +3,7 @@ GPPPARAMS = -m32 -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-excep
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
-objects = loader.o kernel.o
+objects = loader.o gdt.o kernel.o
 
 %.o: %.cpp
 	g++ $(GPPPARAMS) -o $@ -c $<
@@ -35,3 +35,6 @@ mykernel.iso: mykernel.bin
 run: mykernel.iso
 	(killall virtualbox && sleep 1) || true
 	virtualbox --startvm "Erfan OS" &
+
+kvm: mykernel.iso
+	scp mykernel.iso scc@194.225.238.139:/home/scc/mykernel.iso
