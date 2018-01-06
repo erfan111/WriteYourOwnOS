@@ -37,6 +37,7 @@ run: mykernel.iso
 	virtualbox --startvm "Erfan OS" &
 
 kvm: mykernel.iso
+	ssh -t scc@194.225.238.139 "rm -f mykernel.iso"
 	scp mykernel.iso scc@194.225.238.139:/home/scc/mykernel.iso
 
 .PHONY: clean

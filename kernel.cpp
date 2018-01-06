@@ -39,6 +39,17 @@ void printf(char *str)
     }
 }
 
+void cls()
+{
+    char blank[80];
+    for(uint8_t i=0; i < 79; i++)
+        blank[i] = ' ';
+    blank[79] = '\0';
+    for(uint8_t i=0; i < 25; i++)
+        printf(blank);
+    printf("\n");
+}
+
 typedef void (*constructor)();
 extern "C" constructor start_ctors;
 extern "C" constructor end_ctors;
@@ -50,10 +61,11 @@ extern "C" void callConstructors()
 
 extern "C" void kernelMain(void * multiboot_structure, uint32_t magic_number)
 {
+    cls();
     printf("Hello World!\n");
     printf("Erfan SHarafzadeh\n");
     GlobalDescriptorTable gdt;
-    InterruptManager interrupts(&gdt);
+    InterruptManager interrupts(0x20, &gdt);
 
     interrupts.Activate();
     while(1);
