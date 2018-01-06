@@ -3,8 +3,8 @@
 #define __PORT_H
 
 #include "types.h"
-
-class Port
+// Hardware communication interface
+class Port  // Abstract class
 {
     protected:
         Port(uint16_t portnumber);
@@ -12,13 +12,11 @@ class Port
         uint16_t portnumber;
 };
 
-
 class Port8Bit : public Port
 {
     public:
         Port8Bit(uint16_t portnumber);
         ~Port8Bit();
-
         virtual uint8_t Read();
         virtual void Write(uint8_t data);
 
@@ -36,8 +34,6 @@ class Port8Bit : public Port
         }
 };
 
-
-
 class Port8BitSlow : public Port8Bit
 {
     public:
@@ -52,8 +48,6 @@ class Port8BitSlow : public Port8Bit
         }
 
 };
-
-
 
 class Port16Bit : public Port
 {
@@ -78,8 +72,6 @@ class Port16Bit : public Port
         }
 };
 
-
-
 class Port32Bit : public Port
 {
     public:
@@ -102,8 +94,5 @@ class Port32Bit : public Port
             __asm__ volatile("outl %0, %1" : : "a"(_data), "Nd" (_port));
         }
 };
-
-
-
 
 #endif

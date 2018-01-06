@@ -1,3 +1,6 @@
+# This is the code that first eexecutes when the bootloader calls our kernel
+# it sets the magic number which is required by the boot loader
+# then it calls the kernel main routine in the CPP domain
 .set MAGIC, 0x1badb002
 .set FLAGS, (1<<0 | 1<<1 )
 .set CHECKSUM, -(MAGIC + FLAGS)

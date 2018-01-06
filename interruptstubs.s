@@ -59,25 +59,25 @@ HandleInterruptRequest 0x0F
 HandleInterruptRequest 0x31
 
 int_bottom:
-
+    # start the context switch by saving the registers
     pusha
     pushl %ds
     pushl %es
     pushl %fs
     pushl %gs
-
+    # push the interrupt number and call the CPP handler
     pushl %esp
     push (interruptnumber)
     call _ZN16InterruptManager15handleInterruptEhj
     add %esp, 6
     mov %eax, %esp
-
+    # get back and restore everything
     popl %gs
     popl %fs
     popl %es
     popl %ds
     popa
-
+# ignore the interrupt!
 .global _ZN16InterruptManager15InterruptIgnoreEv
 _ZN16InterruptManager15InterruptIgnoreEv:
 

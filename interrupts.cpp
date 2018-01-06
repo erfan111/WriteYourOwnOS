@@ -4,7 +4,7 @@ void printf(char* str);
 
 InterruptManager::GateDescriptor InterruptManager::interruptDescriptorTable[256];
 
-
+// each entry in the interrupt table must be bit perfect. here we take care of it
 void InterruptManager::SetInterruptDescriptorTableEntry(uint8_t interruptNumber,
     uint16_t codeSegmentSelectorOffset,
     void (*handler)(),
@@ -20,10 +20,9 @@ void InterruptManager::SetInterruptDescriptorTableEntry(uint8_t interruptNumber,
     interruptDescriptorTable[interruptNumber].reserved = 0;
 }
 
-
-
+// Interrupt manager is initialized here
 InterruptManager::InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescriptorTable* gdt)
-: picMasterCommand(0x20),
+: picMasterCommand(0x20),   // initializing the interrupt device ports for communication
 picMasterData(0x21),
 picSlaveCommand(0xA0),
 picSlaveData(0xA1)
@@ -31,7 +30,7 @@ picSlaveData(0xA1)
     this->hardwareInterruptOffset = hardwareInterruptOffset;
     uint16_t CodeSegment = gdt->CodeSegmentSelector();
     const uint8_t IDT_INTERRUPT_GATE = 0xE;
-
+    // initialize all the interrupts to b assigned to do nothing for now!
     for(uint8_t i = 255; i > 0; --i)
         {
             SetInterruptDescriptorTableEntry(i, CodeSegment, &InterruptIgnore, 0, IDT_INTERRUPT_GATE);
@@ -39,7 +38,7 @@ picSlaveData(0xA1)
         }
     SetInterruptDescriptorTableEntry(0, CodeSegment, &InterruptIgnore, 0, IDT_INTERRUPT_GATE);
     //handlers[0] = 0;
-
+    // initialize the first few handlers
     SetInterruptDescriptorTableEntry(0x00, CodeSegment, &HandleException0x00, 0, IDT_INTERRUPT_GATE);
     SetInterruptDescriptorTableEntry(0x01, CodeSegment, &HandleException0x01, 0, IDT_INTERRUPT_GATE);
     SetInterruptDescriptorTableEntry(0x02, CodeSegment, &HandleException0x02, 0, IDT_INTERRUPT_GATE);
@@ -77,6 +76,8 @@ picSlaveData(0xA1)
     SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0D, CodeSegment, &HandleInterruptRequest0x0D, 0, IDT_INTERRUPT_GATE);
     SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0E, CodeSegment, &HandleInterruptRequest0x0E, 0, IDT_INTERRUPT_GATE);
     SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0F, CodeSegment, &HandleInterruptRequest0x0F, 0, IDT_INTERRUPT_GATE);
+
+    // make the first contact with the controller. get it ready. select the master and the slave
     picMasterCommand.Write(0x11);
     picSlaveCommand.Write(0x11);
 
@@ -95,7 +96,7 @@ picSlaveData(0xA1)
     interruptDescriptorTablePointer idt;
     idt.size = 256 * sizeof(GateDescriptor) - 1;
     idt.base = (uint32_t)interruptDescriptorTable;
-    asm volatile("lidt %0" : : "m" (idt));
+    asm volatile("lidt %0" : : "m" (idt));  // import the table pointer to CPU
 }
 
 uint16_t InterruptManager::HardwareInterruptOffset()
@@ -106,14 +107,14 @@ uint16_t InterruptManager::HardwareInterruptOffset()
 InterruptManager::~InterruptManager(){
 
 }
-
+// activate the interrupts
 void InterruptManager::Activate()
 {
     asm("sti");
 }
 
 
-
+// for now with each interrupt, this routine is called from the assembly code
 uint32_t InterruptManager::handleInterrupt(uint8_t interruptNumber, uint32_t esp)
 {
     char* foo = "INTERRUPT 0x00";
