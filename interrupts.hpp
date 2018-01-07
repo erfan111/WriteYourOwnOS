@@ -5,10 +5,29 @@
 #include "port.hpp"
 #include "gdt.hpp"
 
+class InterruptManager;
+
+// Abstract Interrupt Handler class
+class InterruptHandler
+{
+protected:
+    uint8_t interruptNumber;
+    InterruptManager* interruptManager;
+
+    InterruptHandler(uint8_t interruptNumber, InterruptManager* interruptManager);
+    ~InterruptHandler();
+public:
+    virtual uint32_t HandleInterrupt(uint32_t esp);
+};
+
 // This class initializes the interrupt handling in CPU by defining the interrupt descriptor table and feeding it to CPU
 class InterruptManager
 {
+    friend class InterruptHandler;
 protected:
+    // only one active interrupt manger will be available
+    static InterruptManager* ActiveInterruptManager;
+    InterruptHandler* handlers[256];
     // each GateDescriptor is an entry in interruptDescriptorTable
     struct GateDescriptor
     {
@@ -86,11 +105,14 @@ protected:
     // this is the commander which invokes the above handlers, itself is invoked by assembly interruptstubs.s
     static uint32_t handleInterrupt(uint8_t interruptNumber, uint32_t esp);
 
+    uint32_t DoHandleInterrupt(uint8_t interruptNumber, uint32_t esp);
+
 public:
     InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescriptorTable* gdt);
     ~InterruptManager();
     uint16_t HardwareInterruptOffset();
     void Activate();
+    void Deactivate();
 
 };
 
