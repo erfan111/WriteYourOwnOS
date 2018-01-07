@@ -1,6 +1,8 @@
 #include "types.h"
 #include "gdt.hpp"
 #include "interrupts.hpp"
+#include "keyboard.hpp"
+#include "mouse.hpp"
 
 // our own printf, which writes to specific bits of memory which are displayed by the video controller to the screen
 void printf(char *str)
@@ -67,6 +69,8 @@ extern "C" void kernelMain(void * multiboot_structure, uint32_t magic_number)
     printf("Erfan SHarafzadeh\n");
     GlobalDescriptorTable gdt;
     InterruptManager interrupts(0x20, &gdt);
+    KeyboardDriver keyboard(&interrupts);
+    MouseDriver mouse(&interrupts);
 
     interrupts.Activate();
     while(1);
