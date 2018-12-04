@@ -34,3 +34,5 @@
 #binaries
 *.iso
 *.bin
+
+.vscode

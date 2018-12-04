@@ -1,9 +1,31 @@
-#include "interrupts.hpp"
+#include <hardwarecommunication/interrupts.hpp>
+
+using namespace wyoos::common;
+using namespace wyoos::hardwarecommunication;
 
 void printf(char* str);
+void printfHex(uint8_t);
+
+InterruptHandler::InterruptHandler(InterruptManager* interruptManager, uint8_t interruptNumber)
+{
+    this->interrptNumber = interruptNumber;
+    this->interruptManager = interruptManager;
+    interruptManager->handlers[interrptNumber] = this;
+}
+
+InterruptHandler::~InterruptHandler()
+{
+    if(interruptManager->handlers[interrptNumber] == this)
+        interruptManager->handlers[interrptNumber] = 0;
+}
+
+uint32_t InterruptHandler::handleInterrupt(uint32_t esp)
+{
+    return esp;
+}
 
 InterruptManager::GateDescriptor InterruptManager::interruptDescriptorTable[256];
-
+InterruptManager *InterruptManager::ActiveInterruptManager = 0;
 
 void InterruptManager::SetInterruptDescriptorTableEntry(uint8_t interruptNumber,
     uint16_t codeSegmentSelectorOffset,
@@ -20,8 +42,6 @@ void InterruptManager::SetInterruptDescriptorTableEntry(uint8_t interruptNumber,
     interruptDescriptorTable[interruptNumber].reserved = 0;
 }
 
-
-
 InterruptManager::InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescriptorTable* gdt)
 : picMasterCommand(0x20),
 picMasterData(0x21),
@@ -35,10 +55,10 @@ picSlaveData(0xA1)
     for(uint8_t i = 255; i > 0; --i)
         {
             SetInterruptDescriptorTableEntry(i, CodeSegment, &InterruptIgnore, 0, IDT_INTERRUPT_GATE);
-            //handlers[i] = 0;
+            handlers[i] = 0;
         }
     SetInterruptDescriptorTableEntry(0, CodeSegment, &InterruptIgnore, 0, IDT_INTERRUPT_GATE);
-    //handlers[0] = 0;
+    handlers[0] = 0;
 
     SetInterruptDescriptorTableEntry(0x00, CodeSegment, &HandleException0x00, 0, IDT_INTERRUPT_GATE);
     SetInterruptDescriptorTableEntry(0x01, CodeSegment, &HandleException0x01, 0, IDT_INTERRUPT_GATE);
@@ -109,19 +129,49 @@ InterruptManager::~InterruptManager(){
 
 void InterruptManager::Activate()
 {
+    if(ActiveInterruptManager != 0)
+        ActiveInterruptManager->Deactivate();
+    ActiveInterruptManager = this;
     asm("sti");
 }
 
+void InterruptManager::Deactivate()
+{
+    if(ActiveInterruptManager == this)
+    {
+        ActiveInterruptManager = 0;
+        asm("cli");
+    }
+}
 
 
 uint32_t InterruptManager::handleInterrupt(uint8_t interruptNumber, uint32_t esp)
 {
-    char* foo = "INTERRUPT 0x00";
-    char* hex = "0123456789ABCDEF";
 
-    foo[12] = hex[(interruptNumber >> 4) & 0xF];
-    foo[13] = hex[interruptNumber & 0xF];
-    printf(foo);
+    if(ActiveInterruptManager != 0)
+        return ActiveInterruptManager->DoHandleInterrupt(interruptNumber, esp);
+    return esp;
+}
+
+uint32_t InterruptManager::DoHandleInterrupt(uint8_t interruptNumber, uint32_t esp)
+{
+    if(handlers[interruptNumber] != 0)
+    {
+        esp = handlers[interruptNumber]->handleInterrupt(esp);
+    }
+    
+    else if(interruptNumber != 0x20)
+    {
+        printf("UNHANDLED INTERRUPT 0x");
+        printfHex(interruptNumber);
+    }
+    
+    if(0x20 <= interruptNumber && interruptNumber < 0x30)
+    {
+        picMasterCommand.Write(0x20);
+        if(0x28 <= interruptNumber)
+            picSlaveCommand.Write(0x20);
+    }
 
     return esp;
 }

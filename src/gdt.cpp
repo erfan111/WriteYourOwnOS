@@ -1,4 +1,7 @@
-#include "gdt.hpp"
+#include <gdt.hpp>
+
+using namespace wyoos;
+using namespace wyoos::common;
 
 GlobalDescriptorTable::GlobalDescriptorTable()
 : nullSegmentSelector(0,0,0),
